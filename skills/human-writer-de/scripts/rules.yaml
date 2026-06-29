@@ -1,0 +1,337 @@
+# DE notes:
+# - Apostrophes/curly chars: the analyzer wraps each suspect-vocabulary phrase
+#   with re.escape + \b...\b. German rarely uses apostrophes in running prose, so
+#   the FR straight-vs-curly caveat is mostly moot here. For ai_constructions,
+#   where a curly quote could appear, we keep a ['’] class only where needed.
+# - Suspect vocabulary covers Tier 1 + Tier 2 (~170 entries). Tier 3 is
+#   documented in references/tells-stylistic-de.md but excluded here:
+#   false-positive risk on common German words is too high for a per-word matcher.
+# - Word matching uses \b...\b. \w in Python's `re` (Unicode mode) includes the
+#   German umlauts ä ö ü and ß, so entries like "bahnbrechend" / "Maßnahme" match.
+# - The "—" em-dash threshold mirrors the master FR/EN value (1.0). CRITICAL
+#   GERMAN NUANCE: the detector counts ONLY the em-dash "—" (U+2014), which is
+#   foreign to German. The spaced en-dash "–" (U+2013, Halbgeviertstrich) is
+#   NATIVE, CORRECT German typography for parenthetical asides and is NEVER
+#   counted/flagged. The AI tell is the Anglo "—"; target 0, hard cap ≤ 1 per
+#   1000 words.
+# - straight_quote_max is the NEW DE typography threshold: the maximum number of
+#   straight ASCII double-quote characters (") allowed in prose before the
+#   detector flags. German uses the typographic pair „ " (Gänsefüßchen). Clean
+#   native prose carries 0 straight ASCII quotes, so it never fires. Note that
+#   strip_non_prose removes fenced code/tables first, so code-string and inch
+#   marks are mostly gone before the count.
+# - burstiness_min and comma_density_max are copied verbatim from the master
+#   thresholds block; they are currently UNREAD by analyze.py (vestigial). Keep
+#   them; do not treat their presence as a bug.
+de:
+  suspect_vocabulary:
+    # --- Tier 1: high signal ---
+    # Meta-comments and hedging openers
+    - "es ist wichtig zu beachten"
+    - "es ist wichtig zu erwähnen"
+    - "es ist wichtig festzuhalten"
+    - "es ist erwähnenswert"
+    - "es sei darauf hingewiesen"
+    - "es sei angemerkt"
+    - "es sei betont"
+    - "es lässt sich festhalten"
+    - "an dieser Stelle sei erwähnt"
+    - "es gilt zu beachten"
+    - "es gilt festzuhalten"
+    - "wie bereits erwähnt"
+    - "wie eingangs erwähnt"
+    - "wie wir alle wissen"
+    - "wie allgemein bekannt"
+    - "bekanntlich"
+    - "zweifellos"
+    - "zweifelsohne"
+    - "ohne Zweifel"
+    - "ohne jeden Zweifel"
+    - "fraglos"
+    - "unbestreitbar"
+    - "unbestritten"
+    - "selbstverständlich"
+    - "natürlich"
+    - "offensichtlich"
+    - "in der Tat"
+    - "tatsächlich"
+    - "letztendlich"
+    - "letztlich"
+    - "im Grunde genommen"
+    - "in diesem Sinne"
+    - "in diesem Zusammenhang"
+    - "in diesem Kontext"
+    - "vor diesem Hintergrund"
+    - "darüber hinaus"
+    - "des Weiteren"
+    - "andererseits"
+    - "auf der anderen Seite"
+    # Spatial-temporal abstractions
+    - "in der heutigen Zeit"
+    - "in der heutigen schnelllebigen Welt"
+    - "in der heutigen digitalen Welt"
+    - "in einer Welt, in der"
+    - "in der modernen Welt"
+    - "im digitalen Zeitalter"
+    - "im Zeitalter der KI"
+    - "im Zeitalter der Digitalisierung"
+    - "im Informationszeitalter"
+    - "in der heutigen Geschäftswelt"
+    - "heutzutage"
+    - "im Kern von"
+    - "im Herzen von"
+    - "im Zentrum von"
+    # Comparators and frames
+    - "im Lichte von"
+    - "vor dem Hintergrund von"
+    - "im Hinblick auf"
+    - "in Anbetracht"
+    - "wenn es darum geht"
+    # Metaphorical inflators
+    - "nahtlos"
+    - "nahtlose"
+    - "nahtloser"
+    - "nahtlosen"
+    - "reibungslos"
+    - "mühelos"
+    - "ganzheitlich"
+    - "ganzheitliche"
+    - "Synergie"
+    - "Synergien"
+    - "synergetisch"
+    - "bahnbrechend"
+    - "bahnbrechende"
+    - "wegweisend"
+    - "wegweisende"
+    - "richtungsweisend"
+    - "hochmodern"
+    - "hochmoderne"
+    - "modernste"
+    - "zukunftsweisend"
+    - "revolutionär"
+    - "revolutionäre"
+    - "revolutionieren"
+    - "transformativ"
+    - "transformative"
+    - "disruptiv"
+    - "disruptive"
+    - "robust"
+    - "robuste"
+    - "skalierbar"
+    - "skalierbare"
+    - "leistungsstark"
+    - "leistungsstarke"
+    - "erstklassig"
+    - "erstklassige"
+    - "branchenführend"
+    - "weltklasse"
+    - "unverzichtbar"
+    - "unverzichtbare"
+    # Structural metaphors
+    - "Eckpfeiler"
+    - "Grundpfeiler"
+    - "Grundstein"
+    - "Rückgrat"
+    - "Herzstück"
+    - "Dreh- und Angelpunkt"
+    # Verbs and verbal phrases
+    - "nutzen"
+    - "Nutzen Sie"
+    - "voll ausschöpfen"
+    - "das Potenzial freisetzen"
+    - "das volle Potenzial"
+    - "freischalten"
+    - "befähigen"
+    - "ermöglichen"
+    - "vorantreiben"
+    - "beschleunigen"
+    - "katalysieren"
+    - "verkörpern"
+    - "schmieden"
+    - "etablieren"
+    - "tauchen Sie ein"
+    - "tauchen wir ein"
+    - "lassen Sie uns eintauchen"
+    - "lassen Sie uns erkunden"
+    - "erkunden wir"
+
+    # --- Tier 2: medium signal ---
+    # Verbs
+    - "erkunden"
+    - "entdecken"
+    - "enthüllen"
+    - "offenbaren"
+    - "transformieren"
+    - "optimieren"
+    - "optimieren Sie"
+    - "rationalisieren"
+    - "vereinfachen"
+    - "fördern"
+    - "begünstigen"
+    - "gewährleisten"
+    - "sicherstellen"
+    - "maximieren"
+    - "minimieren"
+    - "begleiten"
+    - "adressieren"
+    - "verwalten"
+    - "implementieren"
+    - "überwachen"
+    - "integrieren"
+    - "revolutionieren"
+    # Adjectives of importance / intensity
+    - "entscheidend"
+    - "wesentlich"
+    - "grundlegend"
+    - "unerlässlich"
+    - "maßgeblich"
+    - "zentral"
+    - "bedeutend"
+    - "bemerkenswert"
+    - "relevant"
+    - "signifikant"
+    - "außergewöhnlich"
+    - "beeindruckend"
+    - "bemerkenswerte"
+    - "spektakulär"
+    - "einzigartig"
+    - "einzigartige"
+    - "innovativ"
+    - "innovative"
+    - "mächtig"
+    - "elegant"
+    - "ausgefeilt"
+    - "intuitiv"
+    - "intuitive"
+    - "benutzerfreundlich"
+    - "umfassend"
+    - "umfassende"
+    - "vielfältig"
+    - "vielfältige"
+    # Abstract nouns
+    - "Ökosystem"
+    - "Universum"
+    - "Paradigma"
+    - "Paradigmenwechsel"
+    - "Erlebnis"
+    - "Erfahrung"
+    - "Lösung"
+    - "Lösungen"
+    - "Reise"
+    - "Mehrwert"
+    - "Spielraum"
+    - "eine Vielzahl von"
+    - "eine breite Palette von"
+    - "eine Fülle von"
+    - "ein breites Spektrum"
+    # Connectors (overuse)
+    - "zudem"
+    - "ferner"
+    - "ebenso"
+    - "folglich"
+    - "demzufolge"
+    - "infolgedessen"
+    - "somit"
+    - "nichtsdestotrotz"
+    - "dennoch"
+    - "jedoch"
+  ai_constructions:
+    # --- High severity (banned outright) ---
+    - pattern: "Es geht nicht nur um .{1,40}, sondern um"
+      severity: high
+    - pattern: "Nicht nur .{1,40}, sondern auch"
+      severity: high
+    - pattern: "Tauchen Sie ein in"
+      severity: high
+    - pattern: "Tauchen wir ein in"
+      severity: high
+    - pattern: "Lassen Sie uns gemeinsam"
+      severity: high
+    - pattern: "In der heutigen Zeit"
+      severity: high
+    - pattern: "In der heutigen schnelllebigen Welt"
+      severity: high
+    - pattern: "Im digitalen Zeitalter"
+      severity: high
+    - pattern: "Im Zeitalter der KI"
+      severity: high
+    - pattern: "Stellen Sie sich eine Welt vor"
+      severity: high
+    - pattern: "Was wäre, wenn ich Ihnen sagen würde"
+      severity: high
+    - pattern: "Es ist wichtig zu beachten"
+      severity: high
+    - pattern: "Es sei darauf hingewiesen"
+      severity: high
+    - pattern: "Ohne jeden Zweifel"
+      severity: high
+    # --- Medium severity (rare-only) ---
+    - pattern: "Egal, ob Sie .{1,40} oder"
+      severity: medium
+    - pattern: "Ganz gleich, ob Sie .{1,40} oder"
+      severity: medium
+    - pattern: "Schnallen Sie sich an"
+      severity: medium
+    - pattern: "Lassen Sie uns das aufschlüsseln"
+      severity: medium
+    - pattern: "Lassen Sie es mich erklären"
+      severity: medium
+    - pattern: "Kommen wir zur Sache"
+      severity: medium
+    - pattern: "Kurz gesagt,"
+      severity: medium
+    - pattern: "Sie fragen sich vielleicht"
+      severity: medium
+    - pattern: "Vielleicht fragen Sie sich"
+      severity: medium
+    - pattern: "Das Urteil ist eindeutig"
+      severity: medium
+    - pattern: "Die Schlussfolgerung liegt auf der Hand"
+      severity: medium
+    - pattern: "Abschließend lässt sich sagen"
+      severity: medium
+    - pattern: "Zusammenfassend lässt sich sagen"
+      severity: medium
+    - pattern: "Im Großen und Ganzen"
+      severity: medium
+    # --- Low severity (flag only at high frequency) ---
+    - pattern: "Zusammenfassend,"
+      severity: low
+    - pattern: "Letztendlich,"
+      severity: low
+    - pattern: "Letztlich,"
+      severity: low
+    - pattern: "Fazit:"
+      severity: low
+  thresholds:
+    # DE: the Anglo spaced em-dash "—" (U+2014) reads as an AI tell in expository
+    # prose. CRITICAL: the NATIVE German spaced en-dash "–" (U+2013) is correct
+    # and is NOT counted by detect_em_dashes. Target 0 for "—"; convert to
+    # comma/colon/period/parentheses or to the native "–".
+    em_dash_per_1000_words: 1.0
+    burstiness_min: 8.0
+    # Relaxed from 8.0 to 7.5 (2026-06-25): real native Wikipedia prose measured
+    # stdev ~7.85 — a borderline false positive. The deliberate-AI fixture sits at
+    # 9.5+ so the burstiness flag never fires on it; relaxing does not weaken it.
+    sentence_stdev_min: 7.5
+    lexical_diversity_min: 0.45
+    comma_density_max: 2.0
+    bullet_parallelism_max: 0.80
+    # NEW DE typography detector: max number of straight ASCII double-quote (")
+    # characters allowed in prose before flagging. German prose uses the
+    # typographic pair „ " (Gänsefüßchen), so clean native prose carries 0
+    # straight quotes and never fires. Set to 1 to tolerate a single stray
+    # inch-mark/quote that survived strip_non_prose without false-firing.
+    straight_quote_max: 1
+
+content_type_weights:
+  marketing:     {statistical: 1.0, stylistic: 1.0, structural: 1.0}
+  short-comms:   {statistical: 0.6, stylistic: 1.2, structural: 0.5}
+  technical:     {statistical: 0.5, stylistic: 0.7, structural: 0.3}
+  editorial-seo: {statistical: 0.9, stylistic: 1.0, structural: 1.0}
+
+verdict_bands:
+  LOW_RISK: [0, 24]
+  MEDIUM_RISK: [25, 49]
+  HIGH_RISK: [50, 74]
+  CRITICAL: [75, 100]
